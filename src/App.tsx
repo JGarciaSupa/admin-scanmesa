@@ -4,8 +4,9 @@ import LoginPage from './pages/login/page'
 import DashboardPage from './pages/dashboard/page'
 import RestaurantPage from './pages/dashboard/restaurant/page'
 import RestaurantDetailPage from './pages/dashboard/restaurant/detail/page'
-import ProfilePage from './pages/profile/page'
+import ProfilePage from './pages/dashboard/profile/page'
 import { DashboardLayout } from './components/layout/DashboardLayout'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 const router = createBrowserRouter([
   {
@@ -14,11 +15,23 @@ const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <DashboardLayout />,
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />,
+      },
       {
         path: 'dashboard',
         element: <DashboardPage />,
+      },
+      {
+        path: 'dashboard/profile',
+        element: <ProfilePage />
       },
       {
         path: 'dashboard/restaurant',
@@ -28,10 +41,6 @@ const router = createBrowserRouter([
         path: 'dashboard/restaurant/:id',
         element: <RestaurantDetailPage />
       },
-      {
-        path: 'profile',
-        element: <ProfilePage />
-      }
     ]
   },
   {
