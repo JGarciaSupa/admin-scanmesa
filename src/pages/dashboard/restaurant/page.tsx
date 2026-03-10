@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Eye, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Loader2, AlertCircle, RotateCw, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { tenantService, planService, type Tenant, type Plan, type CreateTenantData } from "@/services/tenant.service";
 
@@ -39,17 +39,21 @@ export default function RestaurantPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Estado para el diálogo de crear/editar
+  // Estado para el diálogo de crear/editar/ver
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create");
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // --- NUEVO: Estado para el diálogo de confirmación de eliminación ---
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tenantToToggle, setTenantToToggle] = useState<Tenant | null>(null);
+
   // Estado del formulario
   const [formData, setFormData] = useState<CreateTenantData>({
     name: "",
     documentId: "",
-    schemaName: "",
+    schemaName: "tenant_",
     planId: undefined,
     isActive: true,
   });
@@ -107,7 +111,6 @@ export default function RestaurantPage() {
     setDialogMode(mode);
     setSelectedTenant(tenant || null);
     
-    // Siempre se limpia o llena el estado ANTES de abrir, no al cerrar.
     if (mode === "create") {
       setFormData({
         name: "",
@@ -132,8 +135,36 @@ export default function RestaurantPage() {
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    // No limpiamos el formulario aquí para evitar que los inputs
-    // parpadeen o se vacíen mientras ocurre la animación de cierre de shadcn
+    setError(null);
+  };
+
+  // --- NUEVO: Funciones para el Modal de Confirmación ---
+  const handleOpenDeleteDialog = (tenant: Tenant) => {
+    setTenantToToggle(tenant);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmToggleStatus = async () => {
+    if (!tenantToToggle) return;
+
+    setSubmitting(true);
+    try {
+      const response = await tenantService.update(tenantToToggle.id, { 
+        isActive: !tenantToToggle.isActive 
+      });
+      
+      if (response.success) {
+        await loadTenants();
+        setDeleteDialogOpen(false);
+      } else {
+        alert(response.error || "Error al procesar la solicitud");
+      }
+    } catch (err: any) {
+      alert("Ocurrió un error inesperado al cambiar el estado.");
+    } finally {
+      setSubmitting(false);
+      setTenantToToggle(null);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -193,46 +224,32 @@ export default function RestaurantPage() {
     }
   };
 
-  const handleDelete = async (tenant: Tenant) => {
-    if (!confirm(`¿Estás seguro de que deseas ${tenant.isActive ? 'desactivar' : 'activar'} "${tenant.name}"?`)) {
-      return;
-    }
-
-    try {
-      const response = await tenantService.update(tenant.id, { isActive: !tenant.isActive });
-      if (response.success) {
-        await loadTenants();
-      } else {
-        alert(response.error || "Error al cambiar el estado");
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.error || "Error al cambiar el estado");
-    }
-  };
-
-  const generateSchemaName = (name: string) => {
-    const clean = name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "_")
-      .replace(/_+/g, "_")
-      .replace(/^_|_$/g, "");
-    return `tenant_${clean}`;
-  };
-
   return (
     <div className="w-full">
-      <div className="w-full flex justify-between">
-        <h2 className="text-2xl font-bold">Restaurantes</h2>
-        <Button onClick={() => handleOpenDialog("create")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Restaurante
-        </Button>
+      {/* Cabecera con botones de acción */}
+      <div className="w-full flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Restaurantes</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Gestiona los locales registrados en la plataforma
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => loadTenants()} 
+            disabled={loading}
+            title="Refrescar lista"
+          >
+            <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button onClick={() => handleOpenDialog("create")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Restaurante
+          </Button>
+        </div>
       </div>
-      <span className="text-sm text-gray-500 mt-2">
-        Gestiona los locales registrados en la plataforma
-      </span>
 
       {/* Filtros */}
       <div className="w-full mt-4">
@@ -271,8 +288,8 @@ export default function RestaurantPage() {
         </Card>
       </div>
 
-      {/* Error */}
-      {error && (
+      {/* Alerta de Error Principal */}
+      {error && !dialogOpen && (
         <div className="w-full mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
           <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
           <div>
@@ -282,7 +299,7 @@ export default function RestaurantPage() {
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla de Datos */}
       <div className="w-full mt-4">
         <div className="w-full space-y-4">
           <div className="rounded-md border">
@@ -314,35 +331,36 @@ export default function RestaurantPage() {
                 ) : (
                   tenants.map((tenant) => (
                     <TableRow key={tenant.id}>
-                      <TableCell className="font-medium">{tenant.name}</TableCell>
-                      <TableCell>{tenant.documentId}</TableCell>
-                      <TableCell className="font-mono text-xs">{tenant.schemaName}</TableCell>
-                      <TableCell>{tenant.plan?.name || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant={tenant.isActive ? "success" : "destructive"}>
+                      <TableCell className="text-xs">{tenant.name}</TableCell>
+                      <TableCell className="text-xs">{tenant.documentId}</TableCell>
+                      <TableCell className="text-xs">{tenant.schemaName}</TableCell>
+                      <TableCell className="text-xs">{tenant.plan?.name || "-"}</TableCell>
+                      <TableCell className="text-xs">
+                        <Badge className="text-inherit" variant={tenant.isActive ? "success" : "destructive"}>
                           {tenant.isActive ? "Activo" : "Inactivo"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-0.5">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon-sm"
                             onClick={() => handleOpenDialog("view", tenant)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon-sm"
                             onClick={() => handleOpenDialog("edit", tenant)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(tenant)}
+                            size="icon-sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleOpenDeleteDialog(tenant)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -388,12 +406,10 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      {/* Diálogo de Crear/Editar/Ver */}
+      {/* Diálogo Principal (Crear/Editar/Ver) */}
       <Dialog 
         open={dialogOpen} 
         onOpenChange={(open) => {
-          // Aseguramos que el estado local y el estado de RadixUI estén sincronizados
-          setDialogOpen(open);
           if (!open) handleCloseDialog();
         }}
       >
@@ -413,7 +429,6 @@ export default function RestaurantPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              {/* Nombre */}
               <div className="grid gap-2">
                 <Label htmlFor="name">
                   Nombre del Restaurante <span className="text-red-500">*</span>
@@ -421,18 +436,7 @@ export default function RestaurantPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    // Actualizamos usando callback para evitar problemas de sincronización 
-                    // si se actualizan múltiples propiedades del estado.
-                    setFormData((prev) => ({
-                      ...prev,
-                      name: newValue,
-                      ...(dialogMode === "create" && !prev.schemaName 
-                          ? { schemaName: generateSchemaName(newValue) } 
-                          : {})
-                    }));
-                  }}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={dialogMode === "view"}
                   placeholder="Ej: Restaurante El Buen Sabor"
                 />
@@ -441,10 +445,9 @@ export default function RestaurantPage() {
                 )}
               </div>
 
-              {/* Documento */}
               <div className="grid gap-2">
                 <Label htmlFor="documentId">
-                  RUC / Documento <span className="text-red-500">*</span>
+                  Identificador Fiscal <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="documentId"
@@ -458,8 +461,7 @@ export default function RestaurantPage() {
                 )}
               </div>
 
-              {/* Schema Name (solo en crear) */}
-              {dialogMode === "create" && (
+              {dialogMode === "create" ? (
                 <div className="grid gap-2">
                   <Label htmlFor="schemaName">
                     Nombre del Schema <span className="text-red-500">*</span>
@@ -472,45 +474,38 @@ export default function RestaurantPage() {
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-gray-500">
-                    Solo letras minúsculas, números y guiones bajos. Debe empezar con letra.
+                    Solo letras minúsculas, números y guiones bajos.
                   </p>
                   {formErrors.schemaName && (
                     <p className="text-xs text-red-500">{formErrors.schemaName}</p>
                   )}
                 </div>
-              )}
-
-              {/* Schema Name (mostrar en editar/ver) */}
-              {dialogMode !== "create" && selectedTenant && (
+              ) : (
                 <div className="grid gap-2">
                   <Label>Schema</Label>
                   <Input
-                    value={selectedTenant.schemaName}
+                    value={selectedTenant?.schemaName || ""}
                     disabled
                     className="font-mono text-sm bg-gray-50"
                   />
                 </div>
               )}
 
-              {/* Plan */}
               <div className="grid gap-2">
                 <Label htmlFor="planId">Plan de Suscripción</Label>
                 <Select
-                  // Radix no acepta strings vacíos. Cambiamos "" por "none"
                   value={formData.planId?.toString() || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, planId: value !== "none" ? parseInt(value) : undefined })
                   }
                   disabled={dialogMode === "view"}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full max-w-48">
                     <SelectValue placeholder="Selecciona un plan" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Planes</SelectLabel>
-                      {/* El valor debe ser "none", no "" */}
-                      <SelectItem value="none">Sin plan</SelectItem>
                       {plans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id.toString()}>
                           {plan.name} - ${plan.price.monthly}/{plan.price.currency}
@@ -521,7 +516,6 @@ export default function RestaurantPage() {
                 </Select>
               </div>
 
-              {/* Estado */}
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -537,7 +531,7 @@ export default function RestaurantPage() {
               </div>
             </div>
 
-            {error && (
+            {error && dialogOpen && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
                 <p className="text-sm text-red-700">{error}</p>
@@ -562,6 +556,47 @@ export default function RestaurantPage() {
               )}
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- NUEVO: Diálogo de Confirmación para Activar/Desactivar --- */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-600 mb-2">
+              <AlertTriangle className="h-6 w-6" />
+              <DialogTitle>Confirmar acción</DialogTitle>
+            </div>
+            <DialogDescription className="text-base text-gray-700">
+              ¿Estás seguro de que deseas {tenantToToggle?.isActive ? (
+                <span className="font-bold text-red-600">desactivar</span>
+              ) : (
+                <span className="font-bold text-green-600">activar</span>
+              )} el restaurante <strong>"{tenantToToggle?.name}"</strong>?
+              {tenantToToggle?.isActive && (
+                <p className="mt-2 text-sm text-gray-500">
+                  Esta acción impedirá el acceso a los usuarios de este local hasta que sea reactivado.
+                </p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={submitting}
+            >
+              No, cancelar
+            </Button>
+            <Button 
+              variant={tenantToToggle?.isActive ? "destructive" : "default"}
+              onClick={confirmToggleStatus}
+              disabled={submitting}
+            >
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sí, {tenantToToggle?.isActive ? "Desactivar" : "Activar"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
