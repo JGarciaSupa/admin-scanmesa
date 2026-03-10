@@ -213,20 +213,6 @@ export default function PlansPage() {
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           />
         </div>
-        
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">Filas por página:</span>
-          <Select value={limit} onValueChange={handleLimitChange}>
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="10" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {/* Tabla */}
@@ -280,9 +266,23 @@ export default function PlansPage() {
 
       {/* --- UI DE PAGINACIÓN EN ESPAÑOL --- */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
-        <p className="text-sm text-muted-foreground order-2 sm:order-1">
-          Mostrando página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
-        </p>
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Mostrar:</span>
+          <Select value={limit} onValueChange={handleLimitChange}>
+            <SelectTrigger className="w-15">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm">
+            <span>{currentPage}</span> de <span>{totalPages}</span>
+          </span>
+        </div>
         
         <Pagination className="justify-end w-auto mx-0 order-1 sm:order-2">
           <PaginationContent>

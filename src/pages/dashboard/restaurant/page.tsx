@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -22,9 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Eye, Loader2, AlertCircle, RotateCw, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Loader2, AlertCircle, RotateCw, AlertTriangle, ChevronRight, ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { tenantService, planService, type Tenant, type Plan, type CreateTenantData } from "@/services/tenant.service";
+import { Link } from "react-router";
 
 export default function RestaurantPage() {
   // Estado para los tenants
@@ -38,6 +39,7 @@ export default function RestaurantPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [limit, setLimit] = useState("10");
 
   // Estado para el diálogo de crear/editar/ver
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -68,7 +70,7 @@ export default function RestaurantPage() {
   // Cargar tenants cuando cambien los filtros
   useEffect(() => {
     loadTenants();
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, search, statusFilter, limit]);
 
   const loadPlans = async () => {
     try {
@@ -105,6 +107,12 @@ export default function RestaurantPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- Handlers ---
+  const handleLimitChange = (value: string) => {
+    setLimit(value);
+    setCurrentPage(1); // Resetear a la primera página al cambiar el límite
   };
 
   const handleOpenDialog = (mode: "create" | "edit" | "view", tenant?: Tenant) => {
@@ -306,6 +314,7 @@ export default function RestaurantPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>N°</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Documento</TableHead>
                   <TableHead>Schema</TableHead>
@@ -331,6 +340,7 @@ export default function RestaurantPage() {
                 ) : (
                   tenants.map((tenant) => (
                     <TableRow key={tenant.id}>
+                      <TableCell className="text-xs">{tenant.id}</TableCell>
                       <TableCell className="text-xs">{tenant.name}</TableCell>
                       <TableCell className="text-xs">{tenant.documentId}</TableCell>
                       <TableCell className="text-xs">{tenant.schemaName}</TableCell>
@@ -345,9 +355,10 @@ export default function RestaurantPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => handleOpenDialog("view", tenant)}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Link to={`${tenant.schemaName}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </Button>
                           <Button
                             variant="ghost"
@@ -372,38 +383,81 @@ export default function RestaurantPage() {
               </TableBody>
             </Table>
           </div>
-
-          {/* Paginación */}
-          {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(page)}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
         </div>
+      </div>
+
+      {/* --- UI DE PAGINACIÓN EN ESPAÑOL --- */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Mostrar:</span>
+          <Select value={limit} onValueChange={handleLimitChange}>
+            <SelectTrigger className="w-15">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm">
+            <span>{currentPage}</span> de <span>{totalPages}</span>
+          </span>
+        </div>
+        
+        <Pagination className="justify-end w-auto mx-0 order-1 sm:order-2">
+          <PaginationContent>
+            {/* Botón Anterior */}
+            <PaginationItem>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.preventDefault(); if(currentPage > 1) setCurrentPage(p => p - 1); }}
+                disabled={currentPage === 1}
+                className="gap-1 pl-2.5"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Anterior</span>
+              </Button>
+            </PaginationItem>
+
+            {/* Números */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                  return (
+                    <PaginationItem key={page} className="hidden sm:inline-block">
+                      <PaginationLink 
+                        href="#"
+                        isActive={currentPage === page}
+                        onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                if (page === currentPage - 2 || page === currentPage + 2) {
+                   return <PaginationItem key={page} className="hidden sm:inline-block"><PaginationEllipsis /></PaginationItem>;
+                }
+                return null;
+            })}
+
+            {/* Botón Siguiente */}
+            <PaginationItem>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.preventDefault(); if(currentPage < totalPages) setCurrentPage(p => p + 1); }}
+                disabled={currentPage === totalPages}
+                className="gap-1 pr-2.5"
+              >
+                <span>Siguiente</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
       {/* Diálogo Principal (Crear/Editar/Ver) */}

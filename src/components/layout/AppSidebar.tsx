@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Utensils, ChevronUp, LayoutDashboard, Layers } from "lucide-react";
+import config from "@/config";
+import DashboardUser from './DashboardUser';
 
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -25,12 +27,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-3 py-2 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-            <Utensils className="size-4" />
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
+            <img className="object-cover object-center" src={config.logo} alt={config.name} />
           </div>
           <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold">RestoApp</span>
-            <span className="text-xs text-muted-foreground">v1.0</span>
+            <span className="font-semibold">{config.name}</span>
+            <span className="text-xs text-muted-foreground">v{config.version}</span>
           </div>
         </div>
       </SidebarHeader>
@@ -58,16 +60,8 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold">Juan Doe</span>
-                <span className="truncate text-xs text-muted-foreground">admin@ejemplo.com</span>
-              </div>
-              <ChevronUp className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+            <SidebarMenuButton size="lg">
+              <DashboardUser />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
