@@ -12,11 +12,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Utensils, ChevronUp, LayoutDashboard } from "lucide-react";
+import { Utensils, ChevronUp, LayoutDashboard, Layers } from "lucide-react";
 
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Restaurante", url: "/dashboard/restaurant", icon: Utensils }
+  { title: "Restaurante", url: "/dashboard/restaurant", icon: Utensils },
+  { title: "Planes", url: "/dashboard/plans", icon: Layers }
 ];
 
 export function AppSidebar() {

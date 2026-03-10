@@ -5,6 +5,7 @@ import DashboardPage from './pages/dashboard/page'
 import RestaurantPage from './pages/dashboard/restaurant/page'
 import RestaurantDetailPage from './pages/dashboard/restaurant/detail/page'
 import ProfilePage from './pages/dashboard/profile/page'
+import PlansPage from './pages/dashboard/plans/page'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <DashboardPage />,
+      },
+      {
+        path: 'dashboard/plans',
+        element: <PlansPage />
       },
       {
         path: 'dashboard/profile',
