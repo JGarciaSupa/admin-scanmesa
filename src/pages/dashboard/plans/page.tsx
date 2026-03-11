@@ -65,7 +65,7 @@ export default function PlansPage() {
   // --- Estado del Formulario ---
   const [formData, setFormData] = useState({
     name: "",
-    price: { monthly: "" as string | number, annual: "" as string | number, currency: "PEN" },
+    price: { monthly: "" as string | number, annual: "" as string | number, currency: "EUR" },
     features: [] as string[],
   });
   const [newFeature, setNewFeature] = useState("");
@@ -113,7 +113,7 @@ export default function PlansPage() {
     setDialogMode(mode);
     setSelectedPlan(plan || null);
     if (mode === "create") {
-      setFormData({ name: "", price: { monthly: "", annual: "", currency: "PEN" }, features: [] });
+      setFormData({ name: "", price: { monthly: "", annual: "", currency: "EUR" }, features: [] });
     } else if (plan) {
       setFormData({
         name: plan.name,
