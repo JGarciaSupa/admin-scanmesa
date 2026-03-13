@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { useParams } from "react-router";
+import { type StaffUser } from "@/services/staff.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import TabPersonal from "@/components/dashboard/TabPersonal";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_TENANT = {
@@ -36,12 +37,7 @@ const MOCK_SETTINGS = {
   allowedRadiusMeters: 150,
 };
 
-const MOCK_STAFF = [
-  { id: 1, name: "Carlos Mendoza", email: "carlos@lapizzeria.pe", role: "admin",   isActive: true },
-  { id: 2, name: "María Torres",   email: "maria@lapizzeria.pe",  role: "waiter",  isActive: true },
-  { id: 3, name: "José Quispe",    email: "jose@lapizzeria.pe",   role: "kitchen", isActive: true },
-  { id: 4, name: "Ana Flores",     email: "ana@lapizzeria.pe",    role: "waiter",  isActive: false },
-];
+
 
 const MOCK_TABLES = [
   { id: 1, name: "Mesa 1",    status: "occupied" },
@@ -62,12 +58,6 @@ const daysUntil = (iso) => {
   return Math.ceil((new Date(iso) - new Date()) / (1000 * 60 * 60 * 24));
 };
 
-const ROLE_CONFIG = {
-  admin:   { label: "Admin",  variant: "outline", color: "text-amber-600 border-amber-300 bg-amber-50"   },
-  waiter:  { label: "Mozo",   variant: "outline", color: "text-blue-600 border-blue-300 bg-blue-50"     },
-  kitchen: { label: "Cocina", variant: "outline", color: "text-emerald-600 border-emerald-300 bg-emerald-50" },
-};
-
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function StatusBadge({ active }) {
   return active
@@ -77,11 +67,6 @@ function StatusBadge({ active }) {
     : <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 gap-1">
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" /> Inactivo
       </Badge>;
-}
-
-function RoleBadge({ role }) {
-  const cfg = ROLE_CONFIG[role];
-  return <Badge variant="outline" className={cfg.color}>{cfg.label}</Badge>;
 }
 
 function StatCard({ label, value, sub, accentClass }) {
@@ -129,141 +114,17 @@ function SubscriptionBar({ start, end }) {
   );
 }
 
-// ─── Create Staff Modal ───────────────────────────────────────────────────────
-const EMPTY_FORM = { name: "", email: "", password: "", role: "waiter" };
-
-function CreateStaffModal({ open, onClose, onCreate }) {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [errors, setErrors] = useState({});
-  const [showPass, setShowPass] = useState(false);
-
-  const validate = () => {
-    const e = {};
-    if (!form.name.trim()) e.name = "El nombre es requerido";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email inválido";
-    if (form.password.length < 8) e.password = "Mínimo 8 caracteres";
-    return e;
-  };
-
-  const handleSubmit = () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    onCreate({ ...form, id: Date.now(), isActive: true });
-    setForm(EMPTY_FORM);
-    setErrors({});
-    onClose();
-  };
-
-  const handleClose = () => { setForm(EMPTY_FORM); setErrors({}); onClose(); };
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Nuevo Personal</DialogTitle>
-          <p className="text-sm text-muted-foreground">Crea un usuario para este restaurante.</p>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {/* Nombre */}
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-name">Nombre completo</Label>
-            <Input
-              id="staff-name"
-              placeholder="Ej: María García"
-              value={form.name}
-              onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setErrors(er => ({ ...er, name: undefined })); }}
-              className={errors.name ? "border-red-400 focus-visible:ring-red-300" : ""}
-            />
-            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-email">Correo electrónico</Label>
-            <Input
-              id="staff-email"
-              type="email"
-              placeholder="correo@restaurante.pe"
-              value={form.email}
-              onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setErrors(er => ({ ...er, email: undefined })); }}
-              className={errors.email ? "border-red-400 focus-visible:ring-red-300" : ""}
-            />
-            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-password">Contraseña temporal</Label>
-            <div className="relative">
-              <Input
-                id="staff-password"
-                type={showPass ? "text" : "password"}
-                placeholder="Mínimo 8 caracteres"
-                value={form.password}
-                onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setErrors(er => ({ ...er, password: undefined })); }}
-                className={`pr-10 ${errors.password ? "border-red-400 focus-visible:ring-red-300" : ""}`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(s => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
-              >
-                {showPass ? "🙈" : "👁"}
-              </button>
-            </div>
-            {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
-          </div>
-
-          {/* Rol */}
-          <div className="space-y-1.5">
-            <Label>Rol</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: "admin",   label: "Admin",  icon: "🛡️", desc: "Acceso total"      },
-                { value: "waiter",  label: "Mozo",   icon: "🍽️", desc: "Atención de mesas" },
-                { value: "kitchen", label: "Cocina", icon: "👨‍🍳", desc: "Vista de pedidos"  },
-              ].map(r => (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, role: r.value }))}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 text-center transition-all cursor-pointer
-                    ${form.role === r.value
-                      ? "border-indigo-500 bg-indigo-50"
-                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
-                    }`}
-                >
-                  <span className="text-xl">{r.icon}</span>
-                  <span className={`text-xs font-bold ${form.role === r.value ? "text-indigo-700" : "text-foreground"}`}>{r.label}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{r.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-          <Button onClick={handleSubmit}>Crear Usuario</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TenantDetail() {
+  const params = useParams();
+  const schemaName = params.id!;
+
   const [tenant, setTenant] = useState(MOCK_TENANT);
   const [settings, setSettings] = useState(MOCK_SETTINGS);
-  const [staff, setStaff] = useState(MOCK_STAFF);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [staffFilter, setStaffFilter] = useState("all");
-  const [toast, setToast] = useState(null);
+  const [staff, setStaff] = useState<StaffUser[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
-  const handleCreateStaff = (m) => { setStaff(s => [m, ...s]); showToast(`Usuario "${m.name}" creado correctamente.`); };
-  const toggleStaffActive = (id) => setStaff(s => s.map(m => m.id === id ? { ...m, isActive: !m.isActive } : m));
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const occupiedTables = MOCK_TABLES.filter(t => t.status === "occupied").length;
   const activeStaff = staff.filter(s => s.isActive).length;
@@ -271,16 +132,8 @@ export default function TenantDetail() {
   const subExpired = subDays !== null && subDays < 0;
   const subWarning = subDays !== null && subDays <= 30 && !subExpired;
 
-  const filteredStaff = staff.filter(s =>
-    staffFilter === "all"      ? true :
-    staffFilter === "active"   ? s.isActive :
-    staffFilter === "inactive" ? !s.isActive :
-    s.role === staffFilter
-  );
-
   return (
     <div className="min-h-screen bg-muted/40 p-6 font-sans">
-      <CreateStaffModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={handleCreateStaff} />
 
       {/* Toast */}
       {toast && (
@@ -459,79 +312,11 @@ export default function TenantDetail() {
 
         {/* ── Personal ─────────────────────────────────────────────────────── */}
         <TabsContent value="personal">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">Personal del Restaurante</CardTitle>
-                <Badge variant="secondary">{activeStaff} activos · {staff.length} total</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={staffFilter} onValueChange={setStaffFilter}>
-                  <SelectTrigger className="w-36 h-8 text-xs">
-                    <SelectValue placeholder="Filtrar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="waiter">Mozos</SelectItem>
-                    <SelectItem value="kitchen">Cocina</SelectItem>
-                    <SelectItem value="active">Activos</SelectItem>
-                    <SelectItem value="inactive">Inactivos</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" onClick={() => setShowCreateModal(true)}>+ Nuevo Usuario</Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStaff.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                        No hay usuarios para este filtro.
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredStaff.map(s => (
-                    <TableRow key={s.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
-                            ${s.role === "admin" ? "bg-amber-100 text-amber-700" : s.role === "waiter" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}`}>
-                            {s.name.charAt(0)}
-                          </div>
-                          <span className="font-semibold text-sm">{s.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{s.email}</TableCell>
-                      <TableCell><RoleBadge role={s.role} /></TableCell>
-                      <TableCell><StatusBadge active={s.isActive} /></TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={s.isActive
-                            ? "text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                            : "text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"}
-                          onClick={() => { toggleStaffActive(s.id); showToast(`${s.name} ${s.isActive ? "suspendido" : "reactivado"}.`); }}
-                        >
-                          {s.isActive ? "Suspender" : "Reactivar"}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <TabPersonal 
+            tenantIdentifier={schemaName} 
+            onStaffUpdate={setStaff}
+            showToast={showToast}
+          />
         </TabsContent>
 
         {/* ── Mesas ────────────────────────────────────────────────────────── */}
