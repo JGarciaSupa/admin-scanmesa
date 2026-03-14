@@ -40,36 +40,36 @@ const MOCK_SETTINGS = {
 
 
 const MOCK_TABLES = [
-  { id: 1, name: "Mesa 1",    status: "occupied" },
-  { id: 2, name: "Mesa 2",    status: "free" },
-  { id: 3, name: "Mesa 3",    status: "free" },
-  { id: 4, name: "Barra A",   status: "occupied" },
+  { id: 1, name: "Mesa 1", status: "occupied" },
+  { id: 2, name: "Mesa 2", status: "free" },
+  { id: 3, name: "Mesa 3", status: "free" },
+  { id: 4, name: "Barra A", status: "occupied" },
   { id: 5, name: "Terraza 1", status: "free" },
-  { id: 6, name: "VIP 1",     status: "occupied" },
+  { id: 6, name: "VIP 1", status: "occupied" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (iso) => iso
+const fmt = (iso: string | null) => iso
   ? new Date(iso).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })
   : "—";
 
-const daysUntil = (iso) => {
+const daysUntil = (iso: string | null) => {
   if (!iso) return null;
-  return Math.ceil((new Date(iso) - new Date()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((new Date(iso).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function StatusBadge({ active }) {
+function StatusBadge({ active }: { active: boolean }) {
   return active
     ? <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Activo
-      </Badge>
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Activo
+    </Badge>
     : <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" /> Inactivo
-      </Badge>;
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" /> Inactivo
+    </Badge>;
 }
 
-function StatCard({ label, value, sub, accentClass }) {
+function StatCard({ label, value, sub, accentClass }: { label: string; value: string | number | null; sub?: string; accentClass: string }) {
   return (
     <Card className="relative overflow-hidden">
       <div className={`absolute left-0 top-0 h-full w-1 ${accentClass}`} />
@@ -82,10 +82,10 @@ function StatCard({ label, value, sub, accentClass }) {
   );
 }
 
-function SubscriptionBar({ start, end }) {
+function SubscriptionBar({ start, end }: { start: string | null; end: string | null }) {
   if (!start || !end) return <p className="text-sm text-muted-foreground">Sin fechas configuradas.</p>;
-  const total = new Date(end) - new Date(start);
-  const elapsed = new Date() - new Date(start);
+  const total = new Date(end).getTime() - new Date(start).getTime();
+  const elapsed = new Date().getTime() - new Date(start).getTime();
   const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
   const days = daysUntil(end);
   const expired = days !== null && days < 0;
@@ -97,8 +97,8 @@ function SubscriptionBar({ start, end }) {
         <span className="text-xs text-muted-foreground">{fmt(start)}</span>
         <Badge variant="outline" className={
           expired ? "text-red-600 border-red-200 bg-red-50" :
-          warning  ? "text-amber-600 border-amber-200 bg-amber-50" :
-                     "text-indigo-600 border-indigo-200 bg-indigo-50"
+            warning ? "text-amber-600 border-amber-200 bg-amber-50" :
+              "text-indigo-600 border-indigo-200 bg-indigo-50"
         }>
           {expired ? "VENCIDA" : warning ? `Vence en ${days}d` : `${days} días restantes`}
         </Badge>
@@ -176,10 +176,10 @@ export default function TenantDetail() {
         {/* ── Resumen ──────────────────────────────────────────────────────── */}
         <TabsContent value="resumen" className="space-y-4">
           <div className="grid grid-cols-4 gap-3">
-            <StatCard label="Mesas Ocupadas"  value={`${occupiedTables}/${MOCK_TABLES.length}`} sub="En este momento"               accentClass="bg-amber-400" />
-            <StatCard label="Personal Activo" value={activeStaff}                               sub={`de ${staff.length} registrados`} accentClass="bg-emerald-500" />
-            <StatCard label="Días Restantes"  value={subExpired ? "Vencido" : (subDays ?? "—")} sub={subExpired ? `Venció ${fmt(tenant.subscriptionEnd)}` : `Hasta ${fmt(tenant.subscriptionEnd)}`} accentClass={subExpired ? "bg-red-500" : subWarning ? "bg-amber-400" : "bg-indigo-500"} />
-            <StatCard label="Estado"          value={tenant.isActive ? "Online" : "Bloqueado"}  sub={`Desde ${fmt(tenant.createdAt)}`} accentClass={tenant.isActive ? "bg-emerald-500" : "bg-red-500"} />
+            <StatCard label="Mesas Ocupadas" value={`${occupiedTables}/${MOCK_TABLES.length}`} sub="En este momento" accentClass="bg-amber-400" />
+            <StatCard label="Personal Activo" value={activeStaff} sub={`de ${staff.length} registrados`} accentClass="bg-emerald-500" />
+            <StatCard label="Días Restantes" value={subExpired ? "Vencido" : (subDays ?? "—")} sub={subExpired ? `Venció ${fmt(tenant.subscriptionEnd)}` : `Hasta ${fmt(tenant.subscriptionEnd)}`} accentClass={subExpired ? "bg-red-500" : subWarning ? "bg-amber-400" : "bg-indigo-500"} />
+            <StatCard label="Estado" value={tenant.isActive ? "Online" : "Bloqueado"} sub={`Desde ${fmt(tenant.createdAt)}`} accentClass={tenant.isActive ? "bg-emerald-500" : "bg-red-500"} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -190,9 +190,9 @@ export default function TenantDetail() {
               <CardContent className="space-y-0">
                 {[
                   ["Razón Social", tenant.name],
-                  ["RUC / Doc.",   tenant.documentId],
-                  ["Schema BD",   <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono text-indigo-600">{tenant.schemaName}</code>],
-                  ["Registrado",  fmt(tenant.createdAt)],
+                  ["RUC / Doc.", tenant.documentId],
+                  ["Schema BD", <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono text-indigo-600">{tenant.schemaName}</code>],
+                  ["Registrado", fmt(tenant.createdAt)],
                   ["Actualizado", fmt(tenant.updatedAt)],
                 ].map(([k, v], i) => (
                   <div key={i}>
@@ -214,9 +214,9 @@ export default function TenantDetail() {
                 <SubscriptionBar start={tenant.subscriptionStart} end={tenant.subscriptionEnd} />
                 <Separator />
                 {[
-                  ["Inicio",      fmt(tenant.subscriptionStart)],
+                  ["Inicio", fmt(tenant.subscriptionStart)],
                   ["Vencimiento", fmt(tenant.subscriptionEnd)],
-                  ["Estado",      subExpired ? "Vencida" : subWarning ? `Por vencer (${subDays}d)` : "Vigente"],
+                  ["Estado", subExpired ? "Vencida" : subWarning ? `Por vencer (${subDays}d)` : "Vigente"],
                 ].map(([k, v], i) => (
                   <div key={i} className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">{k}</span>
@@ -259,19 +259,19 @@ export default function TenantDetail() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Nombre Comercial",   key: "name",                type: "text"   },
-                  { label: "Moneda (ISO)",        key: "currency",            type: "text"   },
-                  { label: "IGV por defecto (%)", key: "defaultTaxRate",      type: "text"   },
-                  { label: "Radio GPS (metros)",  key: "allowedRadiusMeters", type: "number" },
-                  { label: "Latitud",             key: "latitude",            type: "text"   },
-                  { label: "Longitud",            key: "longitude",           type: "text"   },
+                  { label: "Nombre Comercial", key: "name", type: "text" },
+                  { label: "Moneda (ISO)", key: "currency", type: "text" },
+                  { label: "IGV por defecto (%)", key: "defaultTaxRate", type: "text" },
+                  { label: "Radio GPS (metros)", key: "allowedRadiusMeters", type: "number" },
+                  { label: "Latitud", key: "latitude", type: "text" },
+                  { label: "Longitud", key: "longitude", type: "text" },
                 ].map(({ label, key, type }) => (
                   <div key={key} className="space-y-1.5">
                     <Label htmlFor={key}>{label}</Label>
                     <Input
                       id={key}
                       type={type}
-                      value={settings[key]}
+                      value={settings[key as keyof typeof MOCK_SETTINGS] as string | number}
                       onChange={e => setSettings(s => ({ ...s, [key]: e.target.value }))}
                     />
                   </div>
@@ -289,14 +289,14 @@ export default function TenantDetail() {
               <div className="grid grid-cols-2 gap-4 pt-2">
                 {[
                   { label: "Inicio de suscripción", key: "subscriptionStart" },
-                  { label: "Fin de suscripción",    key: "subscriptionEnd"   },
+                  { label: "Fin de suscripción", key: "subscriptionEnd" },
                 ].map(({ label, key }) => (
                   <div key={key} className="space-y-1.5">
                     <Label htmlFor={key}>{label}</Label>
                     <Input
                       id={key}
                       type="date"
-                      value={tenant[key] ? tenant[key].slice(0, 10) : ""}
+                      value={tenant[key as keyof typeof MOCK_TENANT] ? (tenant[key as keyof typeof MOCK_TENANT] as string).slice(0, 10) : ""}
                       onChange={e => setTenant(t => ({ ...t, [key]: e.target.value ? new Date(e.target.value).toISOString() : null }))}
                     />
                   </div>
@@ -312,8 +312,8 @@ export default function TenantDetail() {
 
         {/* ── Personal ─────────────────────────────────────────────────────── */}
         <TabsContent value="personal">
-          <TabPersonal 
-            tenantIdentifier={schemaName} 
+          <TabPersonal
+            tenantIdentifier={schemaName}
             onStaffUpdate={setStaff}
             showToast={showToast}
           />
