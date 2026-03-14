@@ -11,8 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Utensils, ChevronUp, LayoutDashboard, Layers } from "lucide-react";
+
+import { Utensils, LayoutDashboard, Layers } from "lucide-react";
 import config from "@/config";
 import DashboardUser from './DashboardUser';
 

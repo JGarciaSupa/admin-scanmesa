@@ -87,7 +87,7 @@ export default function RestaurantPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params: any = {
         page: currentPage,
         limit: 10,
@@ -97,7 +97,7 @@ export default function RestaurantPage() {
       if (statusFilter !== "all") params.isActive = statusFilter === "active";
 
       const response = await tenantService.getAll(params);
-      
+
       if (response.success) {
         setTenants(response.data);
         setTotalPages(response.pagination.totalPages);
@@ -118,7 +118,7 @@ export default function RestaurantPage() {
   const handleOpenDialog = (mode: "create" | "edit" | "view", tenant?: Tenant) => {
     setDialogMode(mode);
     setSelectedTenant(tenant || null);
-    
+
     if (mode === "create") {
       setFormData({
         name: "",
@@ -136,7 +136,7 @@ export default function RestaurantPage() {
         isActive: tenant.isActive,
       });
     }
-    
+
     setFormErrors({});
     setDialogOpen(true);
   };
@@ -157,10 +157,10 @@ export default function RestaurantPage() {
 
     setSubmitting(true);
     try {
-      const response = await tenantService.update(tenantToToggle.id, { 
-        isActive: !tenantToToggle.isActive 
+      const response = await tenantService.update(tenantToToggle.id, {
+        isActive: !tenantToToggle.isActive
       });
-      
+
       if (response.success) {
         await loadTenants();
         setDeleteDialogOpen(false);
@@ -243,10 +243,10 @@ export default function RestaurantPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => loadTenants()} 
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => loadTenants()}
             disabled={loading}
             title="Refrescar lista"
           >
@@ -274,7 +274,7 @@ export default function RestaurantPage() {
               />
               <Select
                 value={statusFilter}
-                onValueChange={(value) => {
+                onValueChange={(value: string) => {
                   setStatusFilter(value);
                   setCurrentPage(1);
                 }}
@@ -405,7 +405,7 @@ export default function RestaurantPage() {
             <span>{currentPage}</span> de <span>{totalPages}</span>
           </span>
         </div>
-        
+
         <Pagination className="justify-end w-auto mx-0 order-1 sm:order-2">
           <PaginationContent>
             {/* Botón Anterior */}
@@ -413,7 +413,7 @@ export default function RestaurantPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => { e.preventDefault(); if(currentPage > 1) setCurrentPage(p => p - 1); }}
+                onClick={(e) => { e.preventDefault(); if (currentPage > 1) setCurrentPage(p => p - 1); }}
                 disabled={currentPage === 1}
                 className="gap-1 pl-2.5"
               >
@@ -424,23 +424,23 @@ export default function RestaurantPage() {
 
             {/* Números */}
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
-                  return (
-                    <PaginationItem key={page} className="hidden sm:inline-block">
-                      <PaginationLink 
-                        href="#"
-                        isActive={currentPage === page}
-                        onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                }
-                if (page === currentPage - 2 || page === currentPage + 2) {
-                   return <PaginationItem key={page} className="hidden sm:inline-block"><PaginationEllipsis /></PaginationItem>;
-                }
-                return null;
+              if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                return (
+                  <PaginationItem key={page} className="hidden sm:inline-block">
+                    <PaginationLink
+                      href="#"
+                      isActive={currentPage === page}
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              if (page === currentPage - 2 || page === currentPage + 2) {
+                return <PaginationItem key={page} className="hidden sm:inline-block"><PaginationEllipsis /></PaginationItem>;
+              }
+              return null;
             })}
 
             {/* Botón Siguiente */}
@@ -448,7 +448,7 @@ export default function RestaurantPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => { e.preventDefault(); if(currentPage < totalPages) setCurrentPage(p => p + 1); }}
+                onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) setCurrentPage(p => p + 1); }}
                 disabled={currentPage === totalPages}
                 className="gap-1 pr-2.5"
               >
@@ -461,8 +461,8 @@ export default function RestaurantPage() {
       </div>
 
       {/* Diálogo Principal (Crear/Editar/Ver) */}
-      <Dialog 
-        open={dialogOpen} 
+      <Dialog
+        open={dialogOpen}
         onOpenChange={(open) => {
           if (!open) handleCloseDialog();
         }}
@@ -549,7 +549,7 @@ export default function RestaurantPage() {
                 <Label htmlFor="planId">Plan de Suscripción</Label>
                 <Select
                   value={formData.planId?.toString() || "none"}
-                  onValueChange={(value) =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, planId: value !== "none" ? parseInt(value) : undefined })
                   }
                   disabled={dialogMode === "view"}
@@ -635,14 +635,14 @@ export default function RestaurantPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
               No, cancelar
             </Button>
-            <Button 
+            <Button
               variant={tenantToToggle?.isActive ? "destructive" : "default"}
               onClick={confirmToggleStatus}
               disabled={submitting}
