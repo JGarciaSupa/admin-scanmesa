@@ -3,7 +3,8 @@
 // ============================================================================
 
 const config = {
-  apiUrl: 'https://backend-mesascan.lobitoconsulting.com/',
+  apiUrl: 'https://backend-mesascan.lobitoconsulting.store/',
+  // apiUrl: 'http://localhost:3000',
   storageKeys: {
     accessToken: 'accessToken',
     user: 'user',
